@@ -317,7 +317,7 @@ def main():
     print("=" * 72)
     print(f"[provider] {provider.upper()}")
     if provider == "ollama":
-        print(f"  - model: {args.ollama-model if False else args.ollama_model}")
+        print(f"  - model: {args.ollama_model}")
     elif provider == "hf":
         print(f"  - model: {args.hf_model}")
     elif provider == "openai":

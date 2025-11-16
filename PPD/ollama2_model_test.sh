@@ -1,6 +1,6 @@
 #!/bin/bash
 
-head -n 21 dataset.csv > dataset_small.csv
+head -n 31 dataset.csv > dataset_small.csv
 
 
 MODELS=(
@@ -27,7 +27,7 @@ for M in "${MODELS[@]}"; do
       --outdir test_${M//[:\/]/_} \
       --provider ollama \
       --ollama-model "$M" \
-      --max-rows 20 \
+      --max-rows 30 \
       --dedup-threshold 0.70
 
   # Evaluate synthetic vs real

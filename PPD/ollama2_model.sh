@@ -1,5 +1,3 @@
-head -n 1001 dataset.csv > dataset_1000.csv
-
 tmux new-session -d -s ppd_gpu "
 
 python3 ppd_generate_ollama_v2.py \

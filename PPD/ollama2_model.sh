@@ -2,9 +2,9 @@ tmux new-session -d -s ppd_gpu "
 
 python3 ppd_generate_ollama_v2.py \
   --input dataset_1000.csv \
-  --outdir artifacts_v4b_llama31_8b \
+  --outdir artifacts_v4b_qwen14b \
   --provider ollama \
-  --ollama-model llama3.1:8b-instruct-q4_K_M
+  --ollama-model qwen2.5:14b-instruct-q4_K_M
 
 python3 - << 'EOF'
 import os, ssl, smtplib

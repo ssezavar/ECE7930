@@ -34,13 +34,16 @@ def run_ollama(
     repeat_penalty: float,
     max_tokens: int,
 ) -> str:
+
     payload = {
         "prompt": prompt,
-        "temperature": temperature,
-        "top_p": top_p,
-        "top_k": top_k,
-        "repeat_penalty": repeat_penalty,
-        "num_predict": max_tokens,
+        "options": {                         # <--- FIXED: must be inside "options"
+            "temperature": temperature,
+            "top_p": top_p,
+            "top_k": top_k,
+            "repeat_penalty": repeat_penalty,
+            "num_predict": max_tokens,
+        }
     }
 
     for attempt in range(1, RETRIES + 1):
@@ -54,14 +57,15 @@ def run_ollama(
             out = p.stdout.decode("utf-8", errors="ignore").strip()
             if out:
                 return out
-            else:
-                log(f"Ollama returned empty output (attempt {attempt})")
+            log(f"Ollama returned empty output (attempt {attempt})")
         except Exception as e:
             log(f"Ollama error (attempt {attempt}): {e}")
+
         time.sleep(RETRY_DELAY)
 
     log("Ollama failed after all retries, returning empty string.")
-    return ""  # final fallback
+    return ""
+
 
 
 # ---------------- Prompts ----------------
@@ -237,8 +241,10 @@ def process_batch(args):
 
     # Mark progress
     if progress is not None:
-        with progress.get_lock():
-            progress.value += 1
+        try:
+            progress.value += 1    # Python 3.12 ValueProxy (no lock)
+        except:
+            pass
 
     # Save checkpoint
     try:
@@ -432,10 +438,26 @@ def main():
         for (batch_id, batch_rows, model) in unfinished
     ]
 
+    # ------------------ OLLAMA MODEL WARMUP (ADD THIS) ------------------
+    log("Warming up model...")
+    _ = run_ollama(
+        args.ollama_model,
+        "Hello",                # tiny prompt to load the model into VRAM
+        temperature=0.1,
+        top_p=1.0,
+        top_k=50,
+        repeat_penalty=1.0,
+        max_tokens=20,
+    )
+    log("Warmup complete.")
+    time.sleep(2)
+    # ---------------------------------------------------------------------
+
     # Run workers
     log("Processing...")
     with Pool(args.workers) as pool:
         async_res = pool.map_async(process_batch, batch_args)
+
 
         while not async_res.ready():
             print_progress(progress, total_batches)

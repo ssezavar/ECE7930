@@ -1,0 +1,12 @@
+{
+  "centroid_cosine_tfidf": 0.9978,
+  "n_real": 14996,
+  "n_synthetic": 13273,
+  "vocab_size": 5778,
+  "params": {
+    "min_df": 5,
+    "max_df": 0.98,
+    "sample": 0
+  },
+  "note": "Lower centroid cosine => larger style/semantic gap; utility can still remain high."
+}

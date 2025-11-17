@@ -1,0 +1,4 @@
+python3 ppd_eval_quant.py \
+  --real dataset.csv \
+  --synthetic artifacts_v6_llama/combined_batch.csv \
+  --outdir quant_v6_llama_eval

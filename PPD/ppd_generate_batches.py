@@ -25,56 +25,83 @@ def log(msg: str):
 
 # ---------------- LLM with retries ----------------
 
-def run_ollama(model, prompt, temperature, top_p, top_k, repeat_penalty, max_tokens,
-               max_retries=4, cooldown_base=1.8):
+def run_ollama(
+    model,
+    prompt,
+    temperature,
+    top_p,
+    top_k,
+    repeat_penalty,
+    max_tokens,
+    max_retries: int = 4,
+    cooldown_base: float = 1.8,
+) -> str:
+    """
+    Call Ollama with JSON payload + sampling options.
+    Includes simple auto-throttling:
+      - backs off on empty / very short outputs
+      - backs off on timeouts
+    """
 
-    import time
-    import subprocess
-    import json
+    payload = {
+        "prompt": prompt,
+        "options": {
+            "temperature": temperature,
+            "top_p": top_p,
+            "top_k": top_k,
+            "repeat_penalty": repeat_penalty,
+            "num_predict": max_tokens,
+        },
+    }
 
     for attempt in range(1, max_retries + 1):
-
         try:
             start = time.time()
-
-            result = subprocess.run(
+            proc = subprocess.run(
                 ["ollama", "run", model],
-                input=prompt.encode("utf-8"),
+                input=json.dumps(payload).encode("utf-8"),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                timeout=60
+                timeout=180,
             )
+            out = proc.stdout.decode("utf-8", errors="ignore").strip()
 
-            output = result.stdout.decode("utf-8", errors="ignore").strip()
+            # --- auto-throttling heuristics ---
 
-            # -------------- AUTO THROTTLING LOGIC -------------------
-            # If response is empty → overload
-            if output == "":
+            # 1) Completely empty → treat as overload, back off
+            if not out:
                 sleep_time = cooldown_base * attempt
+                log(f"Ollama empty output (attempt {attempt}), sleeping {sleep_time:.1f}s")
                 time.sleep(sleep_time)
                 continue
 
-            # If response is too short or model stuttered → throttling
-            if len(output) < 40:
-                sleep_time = cooldown_base * attempt
+            # 2) Suspiciously short → likely truncated / error text, back off lightly
+            if len(out) < 40:
+                sleep_time = cooldown_base * 0.5 * attempt
+                log(f"Ollama very short output (len={len(out)}), sleeping {sleep_time:.1f}s")
                 time.sleep(sleep_time)
-                continue
+                # still return it; JSON layer will decide if usable
+                return out
 
-            # If model responded fast → adjust no sleep
+            # 3) If response came *too* fast, add a tiny delay to avoid bursts
             elapsed = time.time() - start
-            if elapsed < 0.5:
-                time.sleep(0.1)   # tiny pacing to avoid bursts
+            if elapsed < 0.3:
+                time.sleep(0.1)
 
-            return output
+            return out
 
         except subprocess.TimeoutExpired:
-            # Heavy overload → long cooldown
             sleep_time = cooldown_base * (attempt + 1)
+            log(f"Ollama timeout on attempt {attempt}, sleeping {sleep_time:.1f}s")
             time.sleep(sleep_time)
-            continue
+        except Exception as e:
+            sleep_time = cooldown_base * attempt
+            log(f"Ollama error on attempt {attempt}: {e}. Sleeping {sleep_time:.1f}s")
+            time.sleep(sleep_time)
 
-    # Final fallback after all retries
+    log("Ollama failed after all retries, returning empty string.")
     return ""
+
 
 
 

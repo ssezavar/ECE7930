@@ -1,10 +1,12 @@
+head -n 1001 dataset.csv > dataset_1000.csv
+
 tmux new-session -d -s ppd_gpu "
 
 python3 ppd_generate_ollama_v2.py \
-  --input dataset.csv \
-  --outdir artifacts_v4_ollama2 \
+  --input dataset_1000.csv \
+  --outdir artifacts_v4b_qwen14b \
   --provider ollama \
-  --ollama-model mistral:instruct
+  --ollama-model qwen2.5:14b-instruct-q4_K_M
 
 python3 - << 'EOF'
 import os, ssl, smtplib

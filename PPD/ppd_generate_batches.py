@@ -25,46 +25,57 @@ def log(msg: str):
 
 # ---------------- LLM with retries ----------------
 
-def run_ollama(
-    model: str,
-    prompt: str,
-    temperature: float,
-    top_p: float,
-    top_k: int,
-    repeat_penalty: float,
-    max_tokens: int,
-) -> str:
+def run_ollama(model, prompt, temperature, top_p, top_k, repeat_penalty, max_tokens,
+               max_retries=4, cooldown_base=1.8):
 
-    payload = {
-        "prompt": prompt,
-        "options": {                         # <--- FIXED: must be inside "options"
-            "temperature": temperature,
-            "top_p": top_p,
-            "top_k": top_k,
-            "repeat_penalty": repeat_penalty,
-            "num_predict": max_tokens,
-        }
-    }
+    import time
+    import subprocess
+    import json
 
-    for attempt in range(1, RETRIES + 1):
+    for attempt in range(1, max_retries + 1):
+
         try:
-            p = subprocess.run(
+            start = time.time()
+
+            result = subprocess.run(
                 ["ollama", "run", model],
-                input=json.dumps(payload).encode("utf-8"),
-                capture_output=True,
-                timeout=180,
+                input=prompt.encode("utf-8"),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=60
             )
-            out = p.stdout.decode("utf-8", errors="ignore").strip()
-            if out:
-                return out
-            log(f"Ollama returned empty output (attempt {attempt})")
-        except Exception as e:
-            log(f"Ollama error (attempt {attempt}): {e}")
 
-        time.sleep(RETRY_DELAY)
+            output = result.stdout.decode("utf-8", errors="ignore").strip()
 
-    log("Ollama failed after all retries, returning empty string.")
+            # -------------- AUTO THROTTLING LOGIC -------------------
+            # If response is empty → overload
+            if output == "":
+                sleep_time = cooldown_base * attempt
+                time.sleep(sleep_time)
+                continue
+
+            # If response is too short or model stuttered → throttling
+            if len(output) < 40:
+                sleep_time = cooldown_base * attempt
+                time.sleep(sleep_time)
+                continue
+
+            # If model responded fast → adjust no sleep
+            elapsed = time.time() - start
+            if elapsed < 0.5:
+                time.sleep(0.1)   # tiny pacing to avoid bursts
+
+            return output
+
+        except subprocess.TimeoutExpired:
+            # Heavy overload → long cooldown
+            sleep_time = cooldown_base * (attempt + 1)
+            time.sleep(sleep_time)
+            continue
+
+    # Final fallback after all retries
     return ""
+
 
 
 

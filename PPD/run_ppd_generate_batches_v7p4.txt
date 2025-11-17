@@ -1,0 +1,12 @@
+python3 ppd_generate_batches.py \
+  --input dataset.csv \
+  --outdir artifacts_v7p1_llama \
+  --ollama-model llama3.1:8b-instruct \
+  --workers 4 \
+  --temp-step1 0.5 \
+  --temp-step2 1.0 \
+  --max-tokens-step1 220 \
+  --max-tokens-step2 320 \
+  --top-p 0.9 \
+  --top-k 50 \
+  --repeat-penalty 1.12

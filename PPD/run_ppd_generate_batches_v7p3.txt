@@ -1,6 +1,6 @@
-python3 ppd_generate_batches.py \
+python3 ppd_generate_batches_v7p3.py \
   --input dataset.csv \
-  --outdir artifacts_v7p1_llama \
+  --outdir artifacts_v7p3_llama \
   --ollama-model llama3.1:8b-instruct \
   --workers 4 \
   --temp-step1 0.5 \

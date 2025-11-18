@@ -112,41 +112,29 @@ def run_ollama(
 
 def prompt_step1(batch):
     return (
-        "You are an expert in postpartum mental health.\n"
-        "Your task is to analyze each entry and produce:\n"
-        "  • summary: a concise clinical-style summary (2–3 sentences)\n"
-        "  • salient_factors: list of factors contributing to distress\n"
-        "  • estimated_risk: one of these exact labels:\n"
-        "        'EPDS 0–4 (low risk)',\n"
-        "        'EPDS 5–9 (watchful waiting)',\n"
-        "        'EPDS 10–12 (mild PPD)',\n"
-        "        'EPDS 13–19 (moderate PPD)',\n"
-        "        'EPDS 20+ (severe PPD)'\n"
-        "\n"
-        "IMPORTANT:\n"
-        "• Output ONLY a JSON LIST.\n"
-        "• Length and order must match input exactly.\n\n"
+        "Summarize postpartum entries.\n"
+        "For each item return:\n"
+        "  summary\n"
+        "  factors\n"
+        "  risk: one of ['EPDS 0–4','EPDS 5–9','EPDS 10–12','EPDS 13–19','EPDS 20+']\n"
+        "Return ONLY a JSON LIST same length as input.\n\n"
         "INPUT:\n" + json.dumps(batch, ensure_ascii=False)
     )
+
 
 
 # v7.2 — Emotionally-Rich (maximum depth & realism)
 def prompt_step2(step1_list):
     return (
-        "You generate deeply emotional postpartum diary entries. Use introspection, subtle tensions,\n"
-        "mixed feelings, fragile hope, and realistic portrayals of exhaustion and love.\n"
-        "\n"
-        "Requirements:\n"
-        "• Length 170–260 words.\n"
-        "• Use sensory detail: light, sound, textures, physical sensations.\n"
-        "• Capture emotional contradiction: 'I love her so much but I feel so drained.'\n"
-        "• EPDS alignment must be accurate and felt in the writing, not stated.\n"
-        "• Keep everything grounded and lifelike.\n"
-        "• Avoid melodrama or clichés.\n"
-        "\n"
-        "Output a JSON LIST of { synthetic_text, target, style='emotional-rich postpartum diary' }.\n\n"
+        "Write a 150–220 word postpartum diary in first-person.\n"
+        "Tone depends on EPDS risk. Keep natural, emotional, and coherent.\n"
+        "Output JSON LIST with:\n"
+        "  synthetic_text\n"
+        "  target\n"
+        "  style\n\n"
         "INPUT:\n" + json.dumps(step1_list, ensure_ascii=False)
     )
+
 
 
 

@@ -1,4 +1,0 @@
-dataset,n_train,n_test,accuracy,precision,recall,F1
-synthetic,11996,3000,,,,
-real,11996,3000,0.911,0.87,0.927,0.897
-combined,23993,5999,0.717,0.425,0.999,0.596
